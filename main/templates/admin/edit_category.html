@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}编辑分类 - 任务进度管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-pencil-square text-primary"></i>
+                编辑分类：{{ category.display_name }}
+            </h1>
+            <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>
+                返回分类列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control", readonly=true) }}
+                                <div class="form-text">分类名称创建后不能修改</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.display_name.label(class="form-label") }}
+                                {{ form.display_name(class="form-control") }}
+                                {% if form.display_name.errors %}
+                                    {% for error in form.display_name.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                                <div class="form-text">显示给用户的中文名称</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="3", placeholder="请输入分类的详细描述（可选）") }}
+                        {% if form.description.errors %}
+                            {% for error in form.description.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        <div class="form-text">可选：添加关于这个分类的详细描述</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.color.label(class="form-label") }}
+                                {{ form.color(class="form-select") }}
+                                {% if form.color.errors %}
+                                    {% for error in form.color.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                                <div class="form-text">选择分类标签的颜色样式</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.sort_order.label(class="form-label") }}
+                                {{ form.sort_order(class="form-control", placeholder="0") }}
+                                {% if form.sort_order.errors %}
+                                    {% for error in form.sort_order.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                                <div class="form-text">数字越小排序越靠前</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                        </div>
+                        <div class="form-text">禁用的分类将不会在任务创建时显示</div>
+                    </div>
+
+                    <!-- Color Preview -->
+                    <div class="mb-4">
+                        <label class="form-label">颜色预览</label>
+                        <div>
+                            <span class="badge bg-{{ category.color }} me-1" id="colorPreview">{{ category.display_name }}</span>
+                            <small class="text-muted">这是分类标签的显示效果</small>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('admin_categories') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i>
+                            取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>
+                            保存更改
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    分类信息
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>分类ID：</strong></td>
+                        <td>{{ category.id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>分类名称：</strong></td>
+                        <td><code>{{ category.name }}</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>创建时间：</strong></td>
+                        <td>{{ category.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>最后更新：</strong></td>
+                        <td>{{ category.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>使用该分类的任务：</strong></td>
+                        <td>
+                            <span class="badge bg-info">{{ category.tasks.count() }} 个任务</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>当前状态：</strong></td>
+                        <td>
+                            {% if category.is_active %}
+                                <span class="badge bg-success">启用</span>
+                            {% else %}
+                                <span class="badge bg-secondary">禁用</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        {% if category.tasks.count() > 0 %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-list-task me-2"></i>
+                    使用该分类的任务
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for task in category.tasks.limit(5) %}
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ task.title }}</h6>
+                                <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                            <span class="badge bg-{{ task.get_status_color() }}">{{ task.get_status_display() }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if category.tasks.count() > 5 %}
+                    <div class="list-group-item px-0 text-center">
+                        <small class="text-muted">还有 {{ category.tasks.count() - 5 }} 个任务...</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const colorSelect = document.getElementById('color');
+    const colorPreview = document.getElementById('colorPreview');
+    const displayNameInput = document.getElementById('display_name');
+
+    // Update color preview when color changes
+    function updateColorPreview() {
+        const selectedColor = colorSelect.value;
+        const displayName = displayNameInput.value || '{{ category.display_name }}';
+        
+        colorPreview.className = `badge bg-${selectedColor} me-1`;
+        colorPreview.textContent = displayName;
+    }
+
+    // Update preview when inputs change
+    colorSelect.addEventListener('change', updateColorPreview);
+    displayNameInput.addEventListener('input', updateColorPreview);
+
+    // Initial preview update
+    updateColorPreview();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}编辑用户 - 任务进度管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-person-gear text-primary"></i>
+                编辑用户：{{ user.full_name }}
+            </h1>
+            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>
+                返回用户列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.username.label(class="form-label") }}
+                                {{ form.username(class="form-control") }}
+                                {% if form.username.errors %}
+                                    {% for error in form.username.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                                <div class="form-text">用户名必须唯一，3-80个字符</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.full_name.label(class="form-label") }}
+                                {{ form.full_name(class="form-control") }}
+                                {% if form.full_name.errors %}
+                                    {% for error in form.full_name.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.role.label(class="form-label") }}
+                                {{ form.role(class="form-select") }}
+                                {% if form.role.errors %}
+                                    {% for error in form.role.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                                <div class="form-text">
+                                    <strong>角色说明：</strong><br>
+                                    <span class="badge bg-danger me-1">管理员</span>只能管理用户，不能操作任务<br>
+                                    <span class="badge bg-primary me-1">录入员</span>可创建和编辑自己的任务，查看所有任务<br>
+                                    <span class="badge bg-success me-1">监督员</span>可查看和编辑所有任务，不能管理用户
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">账户状态</label>
+                                <div class="form-check">
+                                    {{ form.is_active(class="form-check-input") }}
+                                    {{ form.is_active.label(class="form-check-label") }}
+                                </div>
+                                <div class="form-text">禁用的用户无法登录系统</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>提示：</strong>要修改密码，请使用"重置密码"功能。
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{{ url_for('admin_reset_password', user_id=user.id) }}" class="btn btn-warning">
+                                <i class="bi bi-key me-2"></i>
+                                重置密码
+                            </a>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-2"></i>
+                                取消
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>
+                                保存更改
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    用户信息
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>用户ID：</strong></td>
+                        <td>{{ user.id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>创建时间：</strong></td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>最后更新：</strong></td>
+                        <td>{{ user.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>当前角色：</strong></td>
+                        <td>
+                            <span class="badge bg-{{ user.get_role_color() }}">
+                                {{ user.get_role_display() }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>账户状态：</strong></td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge bg-success">激活</span>
+                            {% else %}
+                                <span class="badge bg-secondary">禁用</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
