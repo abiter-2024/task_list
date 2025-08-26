@@ -81,8 +81,8 @@
 
 1. **克隆项目**（如适用）
    ```bash
-   git clone [项目地址]
-   cd 任务进度情况
+   git clone https://github.com/abiter-2024/task_list
+   cd task_list/main
    ```
 
 2. **安装Python依赖包**
