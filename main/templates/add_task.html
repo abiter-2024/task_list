@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}添加任务 - 任务进度管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-plus-circle text-primary"></i>
+                添加新任务
+            </h1>
+            <a href="{{ url_for('tasks') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>
+                返回任务列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pencil-square me-2"></i>
+                    任务详情
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_task') }}" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label for="title" class="form-label">
+                            任务标题 <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="title" 
+                               name="title" 
+                               required
+                               placeholder="请输入任务标题"
+                               value="{{ request.form.get('title', '') }}">
+                        {% if form.title.errors %}
+                            {% for error in form.title.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        <div class="form-text">
+                            请为您的任务提供一个清晰、简洁的标题。
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">任务描述</label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="4"
+                                  placeholder="请输入任务的详细描述（可选）">{{ request.form.get('description', '') }}</textarea>
+                        <div class="form-text">
+                            可选：添加关于需要做什么的更多详情。
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">初始状态</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="pending" {{ 'selected' if request.form.get('status') == 'pending' else '' }}>
+                                    待处理
+                                </option>
+                                <option value="in-progress" {{ 'selected' if request.form.get('status') == 'in-progress' else '' }}>
+                                    进行中
+                                </option>
+                                <option value="completed" {{ 'selected' if request.form.get('status') == 'completed' else '' }}>
+                                    已完成
+                                </option>
+                            </select>
+                            <div class="form-text">
+                                设置此任务的初始状态。
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="progress" class="form-label">初始进度 (%)</label>
+                            <div class="input-group">
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="progress" 
+                                       name="progress" 
+                                       min="0" 
+                                       max="100" 
+                                       value="{{ request.form.get('progress', '0') }}"
+                                       placeholder="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            {% if form.progress.errors %}
+                                {% for error in form.progress.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <div class="form-text">
+                                设置初始进度（0-100%）。默认为0%。
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新增：计划时间字段 -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="planned_start_date" class="form-label">计划开始日期</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="planned_start_date" 
+                                   name="planned_start_date" 
+                                   value="{{ request.form.get('planned_start_date', '') }}">
+                            <div class="form-text">
+                                设置任务的计划开始日期（可选）。
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="planned_end_date" class="form-label">计划完成日期</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="planned_end_date" 
+                                   name="planned_end_date" 
+                                   value="{{ request.form.get('planned_end_date', '') }}">
+                            <div class="form-text">
+                                设置任务的计划完成日期（可选）。
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新增：任务分配和分类字段 -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="assignee" class="form-label">任务负责人</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="assignee" 
+                                   name="assignee" 
+                                   placeholder="请输入负责人姓名"
+                                   value="{{ request.form.get('assignee', '') }}">
+                            <div class="form-text">
+                                指定任务的负责人或执行者（可选）。
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">任务创建者</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   value="{{ current_user.full_name }}" 
+                                   readonly>
+                            <div class="form-text">
+                                系统自动记录任务创建者：{{ current_user.get_role_display() }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="category" class="form-label">任务分类</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="general" {{ 'selected' if request.form.get('category') == 'general' else '' }}>
+                                    通用任务
+                                </option>
+                                <option value="development" {{ 'selected' if request.form.get('category') == 'development' else '' }}>
+                                    开发任务
+                                </option>
+                                <option value="design" {{ 'selected' if request.form.get('category') == 'design' else '' }}>
+                                    设计任务
+                                </option>
+                                <option value="testing" {{ 'selected' if request.form.get('category') == 'testing' else '' }}>
+                                    测试任务
+                                </option>
+                                <option value="deployment" {{ 'selected' if request.form.get('category') == 'deployment' else '' }}>
+                                    部署任务
+                                </option>
+                                <option value="meeting" {{ 'selected' if request.form.get('category') == 'meeting' else '' }}>
+                                    会议任务
+                                </option>
+                                <option value="research" {{ 'selected' if request.form.get('category') == 'research' else '' }}>
+                                    研究任务
+                                </option>
+                            </select>
+                            <div class="form-text">
+                                选择任务的分类类型。
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Preview -->
+                    <div class="mb-4">
+                        <label class="form-label">进度预览</label>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-primary" 
+                                 id="progressPreview"
+                                 role="progressbar" 
+                                 style="width: 0%"
+                                 aria-valuenow="0" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                0%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('tasks') }}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-x-circle me-1"></i>
+                            取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>
+                            创建任务
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tips Card -->
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    创建有效任务的小贴士
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><strong>具体明确：</strong> 使用清晰、可执行的标题，准确描述需要完成的工作。</li>
+                    <li><strong>添加上下文：</strong> 在描述中包含相关细节以提供上下文信息。</li>
+                    <li><strong>设置实际进度：</strong> 从准确的初始进度开始，以跟踪改进情况。</li>
+                    <li><strong>选择合适状态：</strong> 选择最能反映当前状态的状态。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const progressInput = document.getElementById('progress');
+    const progressPreview = document.getElementById('progressPreview');
+    
+    // Update progress preview when input changes
+    function updateProgressPreview() {
+        const progress = parseInt(progressInput.value) || 0;
+        const clampedProgress = Math.max(0, Math.min(100, progress));
+        
+        progressPreview.style.width = clampedProgress + '%';
+        progressPreview.textContent = clampedProgress + '%';
+        progressPreview.setAttribute('aria-valuenow', clampedProgress);
+        
+        // Update progress bar color based on value
+        progressPreview.className = 'progress-bar';
+        if (clampedProgress === 0) {
+            progressPreview.classList.add('bg-secondary');
+        } else if (clampedProgress < 30) {
+            progressPreview.classList.add('bg-danger');
+        } else if (clampedProgress < 70) {
+            progressPreview.classList.add('bg-warning');
+        } else {
+            progressPreview.classList.add('bg-success');
+        }
+        
+        // Ensure input value is within bounds
+        if (progressInput.value !== clampedProgress.toString()) {
+            progressInput.value = clampedProgress;
+        }
+    }
+    
+    // Initial update
+    updateProgressPreview();
+    
+    // Update on input change
+    progressInput.addEventListener('input', updateProgressPreview);
+    progressInput.addEventListener('blur', updateProgressPreview);
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        
+        if (!title) {
+            e.preventDefault();
+            alert('请输入任务标题。');
+            document.getElementById('title').focus();
+            return false;
+        }
+        
+        const progress = progressInput.value;
+        // 允许进度为空，但如果有值则需要在有效范围内
+        if (progress !== '' && (isNaN(progress) || parseInt(progress) < 0 || parseInt(progress) > 100)) {
+            e.preventDefault();
+            alert('进度必须是0到100之间的数字（可以为空）。');
+            progressInput.focus();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

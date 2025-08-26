@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}任务管理 - 任务进度管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-list-task text-primary"></i>
+                任务管理
+            </h1>
+            <a href="{{ url_for('add_task') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>
+                添加新任务
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Buttons -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-3 text-muted">筛选任务：</h6>
+                <div class="btn-group" role="group" aria-label="Task filters">
+                    <a href="{{ url_for('tasks') }}" 
+                       class="btn {{ 'btn-primary' if current_filter == 'all' else 'btn-outline-primary' }}">
+                        <i class="bi bi-list me-1"></i>
+                        所有任务
+                    </a>
+                    <a href="{{ url_for('tasks', status='pending') }}" 
+                       class="btn {{ 'btn-secondary' if current_filter == 'pending' else 'btn-outline-secondary' }}">
+                        <i class="bi bi-clock me-1"></i>
+                        待处理
+                    </a>
+                    <a href="{{ url_for('tasks', status='in-progress') }}" 
+                       class="btn {{ 'btn-warning' if current_filter == 'in-progress' else 'btn-outline-warning' }}">
+                        <i class="bi bi-hourglass-split me-1"></i>
+                        进行中
+                    </a>
+                    <a href="{{ url_for('tasks', status='completed') }}" 
+                       class="btn {{ 'btn-success' if current_filter == 'completed' else 'btn-outline-success' }}">
+                        <i class="bi bi-check-circle me-1"></i>
+                        已完成
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tasks List -->
+<div class="row">
+    <div class="col-12">
+        {% if tasks %}
+            <div class="row">
+                {% for task in tasks %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 task-card" data-task-id="{{ task.id }}">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-{{ task.get_status_color() }}">
+                                    {{ task.get_status_display() }}
+                                </span>
+                                <span class="badge bg-{{ task.get_category_color() }} ms-1">
+                                    {{ task.get_category_display() }}
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                {{ task.created_at.strftime('%Y-%m-%d') }}
+                            </small>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ task.title }}</h5>
+                            {% if task.description %}
+                                <p class="card-text text-muted">{{ task.description }}</p>
+                            {% endif %}
+                            
+                            <!-- 任务负责人信息 -->
+                            {% if task.assignee %}
+                                <p class="card-text">
+                                    <i class="bi bi-person-fill text-primary"></i>
+                                    <strong>负责人：</strong> {{ task.assignee }}
+                                </p>
+                            {% endif %}
+                            
+                            <!-- 任务创建者信息 -->
+                            <p class="card-text">
+                                <i class="bi bi-person-plus-fill text-info"></i>
+                                <strong>创建者：</strong> {{ task.get_creator_display() }}
+                                {% if task.creator_id == current_user.id %}
+                                    <span class="badge bg-info ms-1">我创建的</span>
+                                {% elif current_user.role == 'data_entry' and task.creator_id != current_user.id %}
+                                    <span class="badge bg-warning ms-1" title="您只能编辑自己创建的任务">他人创建</span>
+                                {% endif %}
+                            </p>
+                            
+                            <!-- 计划时间信息 -->
+                            {% if task.planned_start_date or task.planned_end_date %}
+                                <div class="row mb-2">
+                                    {% if task.planned_start_date %}
+                                        <div class="col-6">
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar-event"></i>
+                                                计划开始： {{ task.planned_start_date.strftime('%m/%d') }}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                    {% if task.planned_end_date %}
+                                        <div class="col-6">
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar-check"></i>
+                                                计划完成： {{ task.planned_end_date.strftime('%m/%d') }}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Progress Bar -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted">进度</small>
+                                    <small class="text-muted">{{ task.progress }}%</small>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar {{ task.get_progress_color() }}" 
+                                         role="progressbar" 
+                                         style="width: {{ task.progress }}%;"
+                                         aria-valuenow="{{ task.progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Progress Update -->
+                            {% if current_user.role == 'supervisor' or (current_user.role == 'data_entry' and task.creator_id == current_user.id) %}
+                                <div class="mb-3">
+                                    <label class="form-label small">快速更新进度：</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" 
+                                               class="form-control progress-input" 
+                                               value="{{ task.progress }}" 
+                                               min="0" 
+                                               max="100"
+                                               data-task-id="{{ task.id }}">
+                                        <span class="input-group-text">%</span>
+                                        <button class="btn btn-outline-primary update-progress-btn" 
+                                                type="button"
+                                                data-task-id="{{ task.id }}">
+                                            <i class="bi bi-check"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">进度信息：</label>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-lock me-1"></i>
+                                        {% if current_user.role == 'data_entry' and task.creator_id != current_user.id %}
+                                            仅可查看（此任务由 {{ task.get_creator_display() }} 创建）
+                                        {% else %}
+                                            您无权修改此任务进度
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="btn-group w-100" role="group">
+                                {% if current_user.role == 'supervisor' or (current_user.role == 'data_entry' and task.creator_id == current_user.id) %}
+                                    <a href="{{ url_for('edit_task', task_id=task.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-pencil me-1"></i>
+                                        编辑
+                                    </a>
+                                {% else %}
+                                    {% if current_user.role == 'data_entry' and task.creator_id != current_user.id %}
+                                        <button class="btn btn-outline-secondary btn-sm" 
+                                                disabled 
+                                                title="仅可查看（此任务由 {{ task.get_creator_display() }} 创建）">
+                                            <i class="bi bi-eye me-1"></i>
+                                            只读
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-outline-secondary btn-sm" 
+                                                disabled 
+                                                title="您没有权限编辑此任务">
+                                            <i class="bi bi-eye me-1"></i>
+                                            只读
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                                
+                                {% if current_user.role == 'supervisor' or (current_user.role == 'data_entry' and task.creator_id == current_user.id) %}
+                                    <button class="btn btn-outline-danger btn-sm delete-task-btn" 
+                                            data-task-id="{{ task.id }}"
+                                            data-task-title="{{ task.title }}">
+                                        <i class="bi bi-trash me-1"></i>
+                                        删除
+                                    </button>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                最后更新： {{ task.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="text-muted mt-3">
+                        {% if current_filter != 'all' %}
+                            没有找到 {{ current_filter.replace('-', ' ') }} 任务
+                        {% else %}
+                            暂无任务
+                        {% endif %}
+                    </h4>
+                    <p class="text-muted">
+                        {% if current_filter != 'all' %}
+                            尝试更改筛选条件或创建新任务。
+                        {% else %}
+                            开始创建您的第一个任务吧！
+                        {% endif %}
+                    </p>
+                    <div class="mt-4">
+                        <a href="{{ url_for('add_task') }}" class="btn btn-primary me-2">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            添加新任务
+                        </a>
+                        {% if current_filter != 'all' %}
+                            <a href="{{ url_for('tasks') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-list me-2"></i>
+                                查看所有任务
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                    确认删除
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                您确定要删除任务“<span id="taskToDelete"></span>”吗？
+                <br><strong class="text-danger">此操作不可撤销。</strong>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash me-1"></i>
+                    删除任务
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Progress update functionality
+    document.querySelectorAll('.update-progress-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const taskId = this.dataset.taskId;
+            const progressInput = document.querySelector(`input[data-task-id="${taskId}"]`);
+            const progress = parseInt(progressInput.value);
+            
+            if (progress < 0 || progress > 100) {
+                alert('进度必须在00到100之间');
+                return;
+            }
+            
+            updateTaskProgress(taskId, progress);
+        });
+    });
+    
+    // Delete task functionality
+    document.querySelectorAll('.delete-task-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const taskId = this.dataset.taskId;
+            const taskTitle = this.dataset.taskTitle;
+            
+            document.getElementById('taskToDelete').textContent = taskTitle;
+            document.getElementById('confirmDeleteBtn').dataset.taskId = taskId;
+            
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+    
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        const taskId = this.dataset.taskId;
+        deleteTask(taskId);
+    });
+});
+
+function updateTaskProgress(taskId, progress) {
+    fetch(`/api/tasks/${taskId}/progress`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ progress: progress })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('错误：' + data.error);
+        } else {
+            location.reload(); // Reload to show updated progress and status
+        }
+    })
+    .catch(error => {
+        console.error('错误：', error);
+        alert('更新进度时发生错误');
+    });
+}
+
+function deleteTask(taskId) {
+    fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('错误：' + data.error);
+        } else {
+            location.reload(); // Reload to remove deleted task
+        }
+    })
+    .catch(error => {
+        console.error('错误：', error);
+        alert('删除任务时发生错误');
+    });
+}
+</script>
+{% endblock %}
